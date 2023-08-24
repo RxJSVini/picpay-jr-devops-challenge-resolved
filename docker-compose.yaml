@@ -1,38 +1,80 @@
+version: '3'
+networks:
+  backend:
+  frontend:
+  database:
 services:
-  portainer:
-    image: portainer/portainer-ce:latest
-    container_name: portainer
-    restart: unless-stopped
-    security_opt:
-      - no-new-privileges:true
-    volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./portainer-data:/data
-    ports:
-    - 9000:9000
-    
   frontend:
     build:
       context: services/frontend
       dockerfile: Dockerfile
     ports:
-        - "80:80" 
+      - "80:80"
+    networks:
+      - frontend
+      - backend
+    depends_on:
+      - writer
+      - reader
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 200M
+        reservations:
+          cpus: '0.1'
+          memory: 100M
   writer:
     build:
       context: services/writer
       dockerfile: Dockerfile
     ports:
       - "8081:8081"
+    networks:
+      - database
+      - backend
+    depends_on:
+      - redis
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 200M
+        reservations:
+          cpus: '0.1'
+          memory: 100M
   reader:
     build:
       context: services/reader
       dockerfile: Dockerfile
     ports:
-        - "8080:8080"
+      - "8080:8080"
+    networks:
+      - database
+      - backend
+    depends_on:
+      - redis
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 200M
+        reservations:
+          cpus: '0.1'
+          memory: 100M
   redis:
     image: "redis"
-    # restart: always
     ports:
       - '6379:6379'
     command: redis-server --save 20 1 --loglevel notice
+    networks:
+      - database
+      - backend
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 200M
+        reservations:
+          cpus: '0.1'
+          memory: 100M

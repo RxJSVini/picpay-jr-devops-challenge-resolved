@@ -2,14 +2,16 @@ package main
 
 import (
 	"fmt"
-	"github.com/go-redis/redis"
-	"github.com/rs/cors"
-	"log"
 	"net/http"
+
+	"github.com/go-redis/redis/v8"
+	"github.com/rs/cors"
+	"golang.org/x/net/context"  
+	"log"
 )
 
 func main() {
-	redis_host := "redis"
+	redis_host := "localhost" 
 	redis_port := "6379"
 	mux := http.NewServeMux()
 
@@ -22,8 +24,12 @@ func main() {
 	})
 
 	mux.HandleFunc("/data", func(writer http.ResponseWriter, request *http.Request) {
-		client := redis.NewClient(&redis.Options{Addr: redis_host + ":" + redis_port})
-		key := client.Get("SHAREDKEY")
+		rdb := redis.NewClient(&redis.Options{
+			Addr: redis_host + ":" + redis_port,
+			DB:   0,
+		})
+		ctx := context.Background()
+		key := rdb.Get(ctx, "SHAREDKEY")
 		if err := key.Err(); err != nil {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return
